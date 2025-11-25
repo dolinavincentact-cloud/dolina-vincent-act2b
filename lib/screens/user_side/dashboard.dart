@@ -1,9 +1,10 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:kwiki/authentication/login.dart';
-import 'package:kwiki/screens/user_side/address.dart';
+import 'package:kwiki/models/product_model.dart';
 import 'package:kwiki/screens/user_side/buyerOrders.dart';
 import 'package:kwiki/screens/user_side/cart.dart';
+import 'package:kwiki/services/database_service.dart';
 
 class Dashboard extends StatefulWidget {
   const Dashboard({super.key});
@@ -23,7 +24,10 @@ class _DashboardState extends State<Dashboard> {
   String selectedCategory = "All";
   String search = "";
   final searchControler = TextEditingController();
+  final DatabaseService _databaseService = DatabaseService();
+  
   final List<CategoryItem> categories = [
+    CategoryItem(name: "All", image: "assets/icons/category_Icons/maloi.png"), // Added All category
     CategoryItem(name: "Coffe", image: "assets/icons/category_Icons/coffe.png"),
     CategoryItem(name: "Pizza", image: "assets/icons/category_Icons/pizza.png"),
     CategoryItem(
@@ -37,87 +41,6 @@ class _DashboardState extends State<Dashboard> {
   Timer? _debounce;
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
-  final List<Map<String, dynamic>> allProducts = [
-    {
-      'id': '1',
-      'name': 'Margherita Pizza',
-      'category': 'Pizza',
-      'price': 250.0,
-      'imagePath': ['assets/icons/category_Icons/maloi.png'],
-      'sizes': ['Small', 'Medium', 'Large'],
-      'userId': 'seller1',
-      'sellerName': 'Pizza Palace',
-      'sellerImage': null,
-      'sellerBio': 'Best pizzas in town!',
-      'description': 'Classic pizza with tomato sauce and mozzarella',
-    },
-    {
-      'id': '2',
-      'name': 'Cheeseburger',
-      'category': 'Burger',
-      'price': 180.0,
-      'imagePath': ['assets/icons/category_Icons/maloi.png'],
-      'sizes': ['Regular', 'Large'],
-      'userId': 'seller2',
-      'sellerName': 'Burger House',
-      'sellerImage': null,
-      'sellerBio': 'Juicy burgers made fresh',
-      'description': 'Beef patty with cheese and veggies',
-    },
-    {
-      'id': '3',
-      'name': 'Carbonara Pasta',
-      'category': 'Pasta',
-      'price': 200.0,
-      'imagePath': ['assets/icons/category_Icons/maloi.png'],
-      'sizes': ['Solo', 'Family'],
-      'userId': 'seller3',
-      'sellerName': 'Pasta Corner',
-      'sellerImage': null,
-      'sellerBio': 'Authentic Italian pasta',
-      'description': 'Creamy pasta with bacon and parmesan',
-    },
-    {
-      'id': '4',
-      'name': 'Iced Coffee',
-      'category': 'Drinks',
-      'price': 120.0,
-      'imagePath': ['assets/icons/category_Icons/maloi.png'],
-      'sizes': ['12oz', '16oz', '22oz'],
-      'userId': 'seller4',
-      'sellerName': 'Coffee Shop',
-      'sellerImage': null,
-      'sellerBio': 'Premium coffee experience',
-      'description': 'Cold brewed coffee with milk',
-    },
-    {
-      'id': '5',
-      'name': 'Chocolate Cake',
-      'category': 'Desserts',
-      'price': 150.0,
-      'imagePath': ['assets/icons/category_Icons/maloi.png'],
-      'sizes': ['Slice', 'Whole'],
-      'userId': 'seller5',
-      'sellerName': 'Sweet Treats',
-      'sellerImage': null,
-      'sellerBio': 'Delicious homemade desserts',
-      'description': 'Rich chocolate layer cake',
-    },
-    {
-      'id': '6',
-      'name': 'Pepperoni Pizza',
-      'category': 'Pizza',
-      'price': 280.0,
-      'imagePath': ['assets/icons/category_Icons/maloi.png'],
-      'sizes': ['Small', 'Medium', 'Large'],
-      'userId': 'seller1',
-      'sellerName': 'Pizza Palace',
-      'sellerImage': null,
-      'sellerBio': 'Best pizzas in town!',
-      'description': 'Pizza loaded with pepperoni',
-    },
-  ];
-
   @override
   void dispose() {
     _debounce?.cancel();
@@ -129,34 +52,36 @@ class _DashboardState extends State<Dashboard> {
     if (_debounce?.isActive ?? false) _debounce!.cancel();
     _debounce = Timer(const Duration(milliseconds: 500), () {
       setState(() {
-        search = query.toLowerCase();
+        search = query;
       });
     });
   }
 
-  List<Map<String, dynamic>> getFilteredProducts() {
-    var filtered = allProducts;
-
-    if (selectedCategory != "All") {
-      filtered = filtered
-          .where((product) => product['category'] == selectedCategory)
-          .toList();
+  Future<void> _addToCart(Product product) async {
+    try {
+      await _databaseService.addToCart(product.id, 1);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('${product.name} added to cart'),
+            backgroundColor: Color(0xFFFF6722),
+            duration: Duration(seconds: 1),
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error adding to cart: $e')),
+        );
+      }
     }
-
-    if (search.isNotEmpty) {
-      filtered = filtered
-          .where((product) =>
-              product['name'].toString().toLowerCase().contains(search))
-          .toList();
-    }
-
-    return filtered;
   }
 
   Drawer buildDrawer(BuildContext context) {
     final userData = {
-      'fullname': 'klarins',
-      'email': 'klarinssssdasdad',
+      'fullname': 'User', 
+      'email': 'user@example.com', 
       'image': null,
     };
 
@@ -226,15 +151,7 @@ class _DashboardState extends State<Dashboard> {
                   Navigator.pushNamed(context, '/favorites');
                 },
               ),
-              ListTile(
-                leading: Icon(Icons.location_on, color: Color(0xFFFF6722)),
-                title: Text('Address'),
-                onTap: () {
-                  Navigator.pop(context);
-                  Navigator.push(context,
-                      MaterialPageRoute(builder: (context) => Address()));
-                },
-              ),
+            
             ],
           ),
           Column(
@@ -266,8 +183,6 @@ class _DashboardState extends State<Dashboard> {
 
   @override
   Widget build(BuildContext context) {
-    final filteredProducts = getFilteredProducts();
-
     return Scaffold(
       key: _scaffoldKey,
       backgroundColor: Colors.white,
@@ -433,89 +348,117 @@ class _DashboardState extends State<Dashboard> {
               SizedBox(
                 height: 10,
               ),
-              GridView.builder(
-                  shrinkWrap: true,
-                  physics: NeverScrollableScrollPhysics(),
-                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      crossAxisSpacing: 10,
-                      mainAxisSpacing: 10,
-                      childAspectRatio: 0.78),
-                  itemCount: filteredProducts.length,
-                  itemBuilder: (contex, index) {
-                    final product = filteredProducts[index];
+              FutureBuilder<List<Product>>(
+                future: _databaseService.getProducts(
+                  category: selectedCategory,
+                  searchQuery: search,
+                ),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return Center(child: CircularProgressIndicator(color: Color(0xFFFF6722)));
+                  }
+                  
+                  if (snapshot.hasError) {
+                    return Center(child: Text('Error: ${snapshot.error}'));
+                  }
 
-                    return GestureDetector(
-                     
-                      child: Card(
-                        color: Colors.white,
-                        elevation: 2,
-                        shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12)),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            ClipRRect(
-                              borderRadius: BorderRadius.circular(12),
-                              child: Container(
-                                  height: 130,
-                                  width: double.infinity,
-                                  color: Colors.grey[300],
-                                  child: Image.asset(
-                                      "assets/icons/category_Icons/coffe.png")),
-                            ),
-                            Padding(
-                              padding: EdgeInsets.all(8.0),
-                              child: Column(
-                                mainAxisSize: MainAxisSize.min,
-                                mainAxisAlignment:
-                                    MainAxisAlignment.spaceBetween,
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    product['name'],
-                                    style:
-                                        Theme.of(context).textTheme.titleMedium,
+                  final products = snapshot.data ?? [];
+
+                  if (products.isEmpty) {
+                    return Center(child: Text('No products found'));
+                  }
+
+                  return GridView.builder(
+                      shrinkWrap: true,
+                      physics: NeverScrollableScrollPhysics(),
+                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          crossAxisSpacing: 10,
+                          mainAxisSpacing: 10,
+                          childAspectRatio: 0.78),
+                      itemCount: products.length,
+                      itemBuilder: (contex, index) {
+                        final product = products[index];
+
+                        return GestureDetector(
+                          onTap: () {
+                          
+                          },
+                          child: Card(
+                            color: Colors.white,
+                            elevation: 2,
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(12)),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                ClipRRect(
+                                  borderRadius: BorderRadius.circular(12),
+                                  child: Container(
+                                      height: 130,
+                                      width: double.infinity,
+                                      color: Colors.grey[300],
+                                      child: product.imageUrl != null 
+                                        ? Image.network(product.imageUrl!, fit: BoxFit.cover)
+                                        : Image.asset("assets/icons/category_Icons/coffe.png", fit: BoxFit.cover)
                                   ),
-                                  Row(
+                                ),
+                                Padding(
+                                  padding: EdgeInsets.all(8.0),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
                                     mainAxisAlignment:
                                         MainAxisAlignment.spaceBetween,
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
+                                    crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
                                       Text(
-                                        '${(product['price'] ?? 0).toStringAsFixed(2)}',
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .titleMedium
-                                            ?.copyWith(
-                                                fontWeight: FontWeight.bold),
+                                        product.name,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style:
+                                            Theme.of(context).textTheme.titleMedium,
                                       ),
                                       Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
-                                          Icon(
-                                            Icons.star,
-                                            size: 15,
-                                            color: Color(0xFFFF6722),
-                                          ),
                                           Text(
-                                            "5.0",
-                                            style: TextStyle(
+                                            '\$${product.price.toStringAsFixed(2)}',
+                                            style: Theme.of(context)
+                                                .textTheme
+                                                .titleMedium
+                                                ?.copyWith(
+                                                    fontWeight: FontWeight.bold),
+                                          ),
+                                          GestureDetector(
+                                            onTap: () => _addToCart(product),
+                                            child: Container(
+                                              padding: EdgeInsets.all(4),
+                                              decoration: BoxDecoration(
                                                 color: Color(0xFFFF6722),
-                                                fontWeight: FontWeight.bold),
+                                                borderRadius: BorderRadius.circular(20),
+                                              ),
+                                              child: Icon(
+                                                Icons.add,
+                                                size: 15,
+                                                color: Colors.white,
+                                              ),
+                                            ),
                                           )
                                         ],
-                                      )
+                                      ),
                                     ],
                                   ),
-                                ],
-                              ),
+                                ),
+                              ],
                             ),
-                          ],
-                        ),
-                      ),
-                    );
-                  })
+                          ),
+                        );
+                      });
+                },
+              )
             ],
           ),
         ),
