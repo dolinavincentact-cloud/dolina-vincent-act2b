@@ -16,7 +16,7 @@ class DatabaseService {
             fileOptions: const FileOptions(cacheControl: '3600', upsert: false),
           );
       
-      // Get the public URL
+     
       final String publicUrl = _supabase.storage.from('products').getPublicUrl('images/$fileName');
       return publicUrl;
     } catch (e) {
@@ -25,7 +25,7 @@ class DatabaseService {
     }
   }
 
-  // Add Product with Image
+ 
   Future<String?> addProduct({
     required String name,
     required String description,
@@ -36,7 +36,7 @@ class DatabaseService {
     try {
       String? imageUrl;
       
-      // Upload image if provided
+   
       if (imageFile != null) {
         final fileName = '${name.toLowerCase().replaceAll(' ', '_')}_${DateTime.now().millisecondsSinceEpoch}.${imageFile.path.split('.').last}';
         imageUrl = await uploadProductImage(imageFile, fileName);
@@ -46,7 +46,7 @@ class DatabaseService {
         }
       }
       
-      // Insert product
+    
       final response = await _supabase.from('products').insert({
         'name': name,
         'description': description,
@@ -63,7 +63,7 @@ class DatabaseService {
   }
 
 
-  // Products
+
   Future<List<Product>> getProducts({String? category, String? searchQuery}) async {
     var query = _supabase.from('products').select();
 
@@ -79,11 +79,11 @@ class DatabaseService {
     return (response as List).map((e) => Product.fromJson(e)).toList();
   }
 
-  // Cart
+  
   Future<void> addToCart(String productId, int quantity) async {
     final userId = _supabase.auth.currentUser!.id;
     
-    // Check if item already exists in cart
+    
     final existingItems = await _supabase
         .from('cart')
         .select()
@@ -91,14 +91,14 @@ class DatabaseService {
         .eq('product_id', productId);
 
     if (existingItems.isNotEmpty) {
-      // Update quantity
+   
       final currentQuantity = existingItems[0]['quantity'] as int;
       await _supabase
           .from('cart')
           .update({'quantity': currentQuantity + quantity})
           .eq('id', existingItems[0]['id']);
     } else {
-      // Insert new item
+    
       await _supabase.from('cart').insert({
         'user_id': userId,
         'product_id': productId,
