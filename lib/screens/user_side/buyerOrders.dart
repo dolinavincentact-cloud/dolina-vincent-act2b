@@ -268,7 +268,7 @@ class _BuyerOrdersState extends State<BuyerOrders> {
                                     ),
                                   ],
                                 ),
-                              )).toList(),
+                              )),
 
                             SizedBox(height: 16),
                             Divider(height: 1),
