@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "780952422598",
+    "project_id": "kwiki-3d23a",
+    "storage_bucket": "kwiki-3d23a.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:780952422598:android:35c2ae65791f1b9ad82fc7",
+        "android_client_info": {
+          "package_name": "com.example.kwiki"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "780952422598-ld68807o34tusrmm99564o2vf52u9852.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDjgEKl83HpWyMqeLctNUBcg3c0-wM70QY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "780952422598-ld68807o34tusrmm99564o2vf52u9852.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
